@@ -1,0 +1,54 @@
+﻿@model List<Models.EF.Product>
+<link href="~/Content/css/style.css" rel="stylesheet" />
+<h3 id="title_spmoi">SẢN PHẨM TƯƠNG TỰ</h3>
+<div class="ct-boxmain row m0">
+    @if (ViewBag.RecommendProducts != null && ((List<Models.EF.Product>)ViewBag.RecommendProducts).Count > 0)
+    {
+        <h3 id="title_spmoi">SẢN PHẨM TƯƠNG TỰ</h3>
+        <div class="ct-boxmain row m0">
+            @{
+                int i = 0;
+                foreach (var sp in (List<Models.EF.Product>)ViewBag.RecommendProducts)
+                {
+                    i++;
+                    <div class="col-xs-6 col-sm-4 col-md-3 p5">
+                        <div class="boxsp">
+                            <div class="imgsp">
+                                <a href="@Url.Action("DetailProduct", new { @Id = sp.ProductId })"
+                                   data-toggle="tooltip"
+                                   title="@sp.Name">
+                                    <img style="width:200px;height:200px;"
+                                         class="imgproduct"
+                                         src="@Url.Content("~/image/" + sp.Photo)" />
+                                </a>
+                            </div>
+                            <div class="namesp">
+                                <a href="@Url.Action("DetailProduct", new { @Id = sp.ProductId })">@sp.Name</a>
+                            </div>
+                            <div class="pricesp">
+                                Giá: @sp.Price.GetValueOrDefault(0).ToString("N0")₫
+                            </div>
+                            <div class="button-hd">
+                                <a href="/them-gio-hang?productid=@sp.ProductId&quantity=1">
+                                    <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    if (i % 4 == 0)
+                    {
+                        <div style="clear:both;"></div>
+                    }
+                }
+            }
+        </div>
+    }
+    else
+    {
+        <p><i>Không tìm thấy sản phẩm tương tự.</i></p>
+    }
+</div>
+
+
+
