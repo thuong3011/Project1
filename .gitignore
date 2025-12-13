@@ -1,2 +1,10 @@
+<<<<<<< HEAD
 .vs/
 packages/
+=======
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/WebsiteNoiThat/WebsiteNoiThat.sln
+>>>>>>> 8c36c725d776bb6fdb832a6039f08042da5a3c05
