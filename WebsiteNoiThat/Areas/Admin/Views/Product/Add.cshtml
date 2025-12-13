@@ -1,0 +1,124 @@
+﻿@model WebsiteNoiThat.Models.ProductViewModel
+
+@{
+    ViewBag.Title = "Thêm sản phẩm";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Thêm mới sản phẩm</h2>
+
+@using (Html.BeginForm("Add", "Product", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    @Html.AntiForgeryToken()
+<div class="form-horizontal">
+    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+    <!-- Tên sản phẩm -->
+    <div class="form-group">
+        @Html.LabelFor(m => m.Name, new { @class = "control-label col-md-2" })
+        <div class="col-md-10">
+            @Html.TextBoxFor(m => m.Name, new { @class = "form-control", required = "" })
+        </div>
+    </div>
+
+    <!-- Danh mục -->
+    <div class="form-group">
+        @Html.LabelFor(model => model.CateId, htmlAttributes: new { @class = "control-label col-md-2" })
+        <div class="col-md-10">
+            @Html.DropDownListFor(model => model.CateId, ViewBag.ListCate as SelectList, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.CateId, "", new { @class = "text-danger" })
+        </div>
+    </div>
+
+    <!-- Nhà cung cấp -->
+    <div class="form-group">
+        @Html.LabelFor(model => model.ProviderId, htmlAttributes: new { @class = "control-label col-md-2" })
+        <div class="col-md-10">
+            @Html.DropDownListFor(model => model.ProviderId, ViewBag.ListProvider as SelectList, new { htmlAttributes = new { @class = "form-control", @required = "" } })
+            @Html.ValidationMessageFor(model => model.ProviderId, "", new { @class = "text-danger" })
+        </div>
+    </div>
+
+
+    <!-- Giá & Số lượng -->
+    <div class="form-group">
+        @Html.LabelFor(m => m.Price, new { @class = "control-label col-md-2" })
+        <div class="col-md-4">@Html.TextBoxFor(m => m.Price, new { @class = "form-control" })</div>
+
+        @Html.LabelFor(m => m.Quantity, new { @class = "control-label col-md-2" })
+        <div class="col-md-4">@Html.TextBoxFor(m => m.Quantity, new { @class = "form-control" })</div>
+    </div>
+
+    <!-- Giảm giá -->
+    <div class="form-group">
+        @Html.LabelFor(m => m.Discount, new { @class = "control-label col-md-2" })
+        <div class="col-md-10">@Html.TextBoxFor(m => m.Discount, new { @class = "form-control" })</div>
+    </div>
+
+    <!-- Ngày -->
+    <div class="form-group">
+        @Html.LabelFor(m => m.StartDate, new { @class = "control-label col-md-2" })
+        <div class="col-md-4">@Html.TextBoxFor(m => m.StartDate, new { type = "date", @class = "form-control" })</div>
+
+        @Html.LabelFor(m => m.EndDate, new { @class = "control-label col-md-2" })
+        <div class="col-md-4">@Html.TextBoxFor(m => m.EndDate, new { type = "date", @class = "form-control" })</div>
+    </div>
+
+    <!-- Ảnh đại diện -->
+    <div class="form-group">
+        <label class="control-label col-md-2">Ảnh đại diện</label>
+        <div class="col-md-10">
+            <input type="file" id="UploadImage" name="UploadImage" required onchange="previewMain(this)" />
+            <br />
+            <img id="mainPreview" style="max-width:200px; display:none; margin-top:10px;" />
+        </div>
+    </div>
+
+    <!-- Ảnh chi tiết -->
+    <div class="form-group">
+        <label class="control-label col-md-2">Ảnh chi tiết</label>
+        <div class="col-md-10">
+            <input type="file" name="UploadImagesDetails" id="UploadImagesDetails" multiple onchange="previewDetails(this)" />
+            <div id="detailPreview" style="display:flex; flex-wrap:wrap; margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+            <input type="submit" value="Thêm sản phẩm" class="btn btn-primary" />
+        </div>
+    </div>
+</div>
+}
+
+<script>
+    function previewMain(input) {
+        if (input.files && input.files[0]) {
+            let reader = new FileReader();
+            reader.onload = e => {
+                let img = document.getElementById("mainPreview");
+                img.src = e.target.result;
+                img.style.display = "block";
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function previewDetails(input) {
+        let container = document.getElementById("detailPreview");
+        container.innerHTML = "";
+        Array.from(input.files).forEach(file => {
+            let reader = new FileReader();
+            reader.onload = e => {
+                let img = document.createElement("img");
+                img.src = e.target.result;
+                img.style.width = "120px";
+                img.style.margin = "5px";
+                img.style.border = "1px solid #aaa";
+                img.style.padding = "3px";
+                container.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+</script>

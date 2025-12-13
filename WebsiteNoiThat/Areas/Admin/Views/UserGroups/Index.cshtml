@@ -1,0 +1,30 @@
+﻿@model IEnumerable<Models.EF.UserGroup>
+
+@{
+    ViewBag.Title = "Quản lý Nhóm người dùng";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Nhóm người dùng</h2>
+
+<table class="table">
+    <tr>
+        <th>@Html.DisplayNameFor(model => model.GroupId)</th>
+        <th>@Html.DisplayNameFor(model => model.Name)</th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr class="groupRow" data-groupid="@item.GroupId" style="cursor:pointer">
+            <td>@item.GroupId</td>
+            <td>@item.Name</td>
+            <td>
+                <input type="button" class="btn btn-sm btn-primary" value="Sửa"
+                       onclick="event.stopPropagation(); location.href='@Url.Action("Edit", "UserGroups", new { id=item.GroupId })'" /> |
+ 
+            </td>
+        </tr>
+    }
+</table>
+

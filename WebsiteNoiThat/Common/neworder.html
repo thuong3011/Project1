@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đơn hàng mới - NoiThatGo.vn</title>
+    <style>
+        body, table, td, a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f6f6;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        h2 {
+            color: #1a73e8;
+            border-bottom: 2px solid #eeeeee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        h3 {
+            color: #333333;
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .customer-info p {
+            margin: 5px 0;
+            line-height: 1.5;
+            color: #555555;
+        }
+
+        .customer-info b {
+            color: #333333;
+            min-width: 120px;
+            display: inline-block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f5f5f5;
+            color: #333333;
+            font-weight: bold;
+        }
+
+        td:nth-child(1),
+        td:nth-child(3),
+        td:nth-child(5) {
+            text-align: center;
+        }
+
+        td:nth-child(4) {
+            text-align: right;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        td:nth-child(5) {
+            color: #4CAF50;
+        }
+
+        .total {
+            background-color: #f7fcf5;
+            border: 1px solid #e2f0d9;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eeeeee;
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+            }
+
+            td, th {
+                padding: 8px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+
+        <h2>🔔 Đơn hàng mới #{{id}}</h2>
+
+        <h3>Thông tin khách hàng:</h3>
+        <div class="customer-info">
+            <p><b>Khách hàng:</b>{{CustomerName}}</p>
+            <p><b>Số điện thoại:</b>0{{Phone}}</p>
+            <p><b>Email:</b> {{Email}}</p>
+            <p><b>Thời gian đặt hàng:</b> {{OrderTime}}</p>
+            <p><b>Địa chỉ giao hàng:</b> {{Address}}</p>
+            <p><b>Phương thức thanh toán:</b> {{PaymentMethod}}</p>
+            <p><b>Trạng thái thanh toán:</b> {{PaymentStatus}}</p>
+            <p><b>Thời gian thanh toán:</b> {{PaymentTime}}</p>
+        </div>
+
+        <h3>Chi tiết đơn hàng:</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Sản phẩm</th>
+                    <th>Số lượng</th>
+                    <th>Giá sau KM</th>
+                    <th>Giảm (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{data}}
+            </tbody>
+        </table>
+
+        <div class="total">
+            Tổng thanh toán: {{Total}} VNĐ
+        </div>
+
+        <div class="footer">
+            <p>Cảm ơn bạn đã mua hàng tại <b>NoiThatGo.vn</b></p>
+            <p>Đây là email tự động. Vui lòng không trả lời email này.</p>
+        </div>
+    </div>
+</body>
+</html>
