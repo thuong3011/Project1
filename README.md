@@ -1,24 +1,9 @@
-# 📦 Website Bán đồ Nội Thất Gỗ
 
-> **"Giải pháp chuyển đổi số toàn diện, giúp các doanh nghiệp nội thất vừa và nhỏ tối ưu hóa quản lý và bứt phá doanh thu online."**
-
----
-
-## ✨ Giới Thiệu Dự Án
-
-### 🎯 Vấn Đề
-Ngành nội thất gỗ Việt Nam đang phát triển mạnh mẽ trên nền tảng số. Tuy nhiên, các cơ sở truyền thống, đặc biệt là **doanh nghiệp vừa và nhỏ (SMEs)**, vẫn gặp khó khăn với các quy trình quản lý thủ công, thiếu hiệu quả như:
-* Kiểm kê hàng hóa tốn thời gian, dễ sai sót.
-* Theo dõi đơn hàng rời rạc, thiếu minh bạch.
-* Quản lý tồn kho và doanh thu không trực quan.
-
-### 💡 Giải Pháp
-Dự án **"Xây dựng hệ thống Website bán đồ nội thất"** ra đời nhằm cung cấp một nền tảng thương mại điện tử chuyên biệt. Hệ thống không chỉ là nơi giao dịch online mà còn là công cụ quản trị mạnh mẽ, giúp doanh nghiệp:
-1.  Tiếp cận thị trường online dễ dàng.
-2.  Tự động hóa và tối ưu hóa quy trình kinh doanh.
-3.  Nâng cao trải nghiệm mua sắm cho khách hàng.
-
----
+## ✨ Giới Thiệu Tính Năng Nổi Bật Dự Án
+* Đăng nhập bằng Facebook
+* Thanh toán online = MOMO
+* AI gợi ý sản phẩm
+* Chatbot đơn giản call api Gemini
 
 ## 🚀 Các Tính Năng Cốt Lõi
 
@@ -69,10 +54,5 @@ Hệ thống được thiết kế theo mô hình **MVC (Model - View - Controll
 * **Dễ Bảo Trì & Mở Rộng:** Dễ dàng thay đổi hoặc nâng cấp từng thành phần độc lập.
 * **Hỗ Trợ Làm Việc Nhóm:** Cho phép nhiều thành viên phát triển các module song song.
 
----
 
-## 🙏 Lời Cảm Ơn
 
-Chúng em xin gửi lời tri ân sâu sắc nhất đến **Thầy Hoàng Văn Thông** – giảng viên hướng dẫn môn Project 1, người đã tận tình hỗ trợ, định hướng và truyền cảm hứng để nhóm hoàn thiện dự án này.
-
-Dù đã cố gắng hết sức, chúng em nhận thấy sản phẩm vẫn còn thiếu sót và rất mong nhận được những góp ý quý báu từ cộng đồng để tiếp tục cải thiện và phát triển sản phẩm ngày càng hoàn thiện hơn.
