@@ -3,7 +3,7 @@
 * Đăng nhập bằng Facebook
 * Thanh toán online = MOMO
 * AI gợi ý sản phẩm
-* Chatbot đơn giản call api Gemini
+* Chatbot tư vấn đơn giản call api Gemini
 
 ## 🚀 Các Tính Năng Cốt Lõi
 
