@@ -2,6 +2,7 @@
 ## ✨ Giới Thiệu Tính Năng Nổi Bật Dự Án
 * Đăng nhập bằng Facebook
 * Thanh toán online = MOMO
+* Gửi mail thông báo
 * AI gợi ý sản phẩm
 * Chatbot tư vấn đơn giản call api Gemini
 
