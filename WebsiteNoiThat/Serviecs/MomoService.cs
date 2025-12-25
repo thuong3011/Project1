@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 public class MomoService
 {
 	private const string PARTNER_CODE = "MOMO";
-	private const string ACCESS_KEY = "F8BBA842ECF85";
-	private const string SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
+	private const string ACCESS_KEY = "";
+	private const string SECRET_KEY = "";
 	private const string REDIRECT_URL = "http://localhost:58473/momo-return";
 	private const string IPN_URL = "http://localhost:58473/momo-ipn";
 	private const string REQUEST_TYPE = "payWithMethod";
