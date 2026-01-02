@@ -1,4 +1,4 @@
-﻿using Models.DAO;
+using Models.DAO;
 using Models.EF;
 using PagedList;
 using System;
@@ -453,97 +453,85 @@ namespace WebsiteNoiThat.Controllers
 		}
 
 
-
-		public ActionResult HistoryCart(int? page)
+		public ActionResult HistoryCart()
 		{
-			int pagenumber = (page ?? 1);
-			int pagesize = 6;
-			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-
+			var session = (UserLogin)Session[Commoncontent.user_sesion];
 			if (session == null) return Redirect("/dang-nhap");
 
-			var model = (
-				from po in db.ProductOrders
-				join od in db.OrderDetails on po.OrderDetailId equals od.OrderDetailId
-				join o in db.Orders on od.OrderId equals o.OrderId
-				join p in db.Products on po.ProductId equals p.ProductId // lấy Photo, EndDate nếu ProductOrder không có
-				join s in db.Status on o.StatusId equals s.StatusId
-				where o.UserId == session.UserId
-				orderby o.UpdateDate descending
-				select new HistoryCart
+			ViewBag.StatusMenu = db.Status
+				.Select(s => new StatusMenuVM
 				{
-					OrderDetaiId = od.OrderDetailId,
-					ProductId = po.ProductId,
-					Name = po.Name,
-					Price = po.Price,
-					Discount = po.Discount,
-					Photo = p.Photo,
-					EndDate = p.EndDate,
-					Quantity = od.Quantity ?? 0,
-					StatusId = o.StatusId,
-					NameStatus = s.Name,
-					OrderId = o.OrderId  // ← OrderId lấy chuẩn từ join Order
-				}
-			).ToList();
+					StatusId = s.StatusId,
+					Name = s.Name,
+					Count = db.Orders.Count(o => o.UserId == session.UserId && o.StatusId == s.StatusId)
+				}).ToList();
 
-			return View(model.ToPagedList(pagenumber, pagesize));
+			return View();
 		}
 
-
-
-		public ActionResult DeleteItem(long id)
+		public ActionResult HistoryCartPartial(int? statusId, int page = 1)
 		{
-			// Lấy OrderDetail
-			var orderDetail = db.OrderDetails.SingleOrDefault(n => n.OrderDetailId == id);
-			if (orderDetail == null) return RedirectToAction("HistoryCart");
+			int pageSize = 6;
+			var session = (UserLogin)Session[Commoncontent.user_sesion];
+			if (session == null) return PartialView("_HistoryCartTable", null);
 
-			// Lấy Order để kiểm tra trạng thái
-			var order = db.Orders.SingleOrDefault(o => o.OrderId == orderDetail.OrderId);
-			if (order == null) return RedirectToAction("HistoryCart");
+			var query = from po in db.ProductOrders
+						join od in db.OrderDetails on po.OrderDetailId equals od.OrderDetailId
+						join o in db.Orders on od.OrderId equals o.OrderId
+						join p in db.Products on po.ProductId equals p.ProductId
+						join s in db.Status on o.StatusId equals s.StatusId
+						where o.UserId == session.UserId
+						select new HistoryCart
+						{
+							OrderId = o.OrderId,
+							Name = po.Name,
+							Photo = p.Photo,
+							Quantity = od.Quantity ?? 0,
+							Price = po.Price,
+							Discount = po.Discount,
+							StatusId = o.StatusId,
+							NameStatus = s.Name
+						};
 
-			// Chỉ cho phép hủy khi Status = 1 hoặc 2
-			if (order.StatusId == 1 || order.StatusId == 2)
-			{
-				// 1. Lấy ProductOrder liên quan
-				var productOrders = db.ProductOrders
-									  .Where(po => po.OrderDetailId == orderDetail.OrderDetailId
-												   && po.ProductId == orderDetail.ProductId)
-									  .ToList();
+			if (statusId.HasValue)
+				query = query.Where(x => x.StatusId == statusId);
 
-				foreach (var po in productOrders)
-				{
-					db.ProductOrders.Remove(po);
-				}
+			var model = query
+				.OrderByDescending(x => x.OrderId)
+				.ToPagedList(page, pageSize);
 
-				// 2. Cộng lại Quantity vào Product
-				var product = db.Products.SingleOrDefault(p => p.ProductId == orderDetail.ProductId);
-				if (product != null)
-				{
-					product.Quantity += orderDetail.Quantity ?? 0;
-				}
-
-				// 3. Xóa OrderDetail
-				db.OrderDetails.Remove(orderDetail);
-				db.SaveChanges();
-
-				// 4. Kiểm tra nếu Order không còn OrderDetail nào → xóa luôn Order
-				bool hasOrderDetails = db.OrderDetails.Any(od => od.OrderId == order.OrderId);
-				if (!hasOrderDetails)
-				{
-					db.Orders.Remove(order);
-					db.SaveChanges();
-				}
-			}
-			else
-			{
-				// Không được phép hủy → redirect trang lỗi
-				return Redirect("/loi-huy-hang");
-			}
-
-			return RedirectToAction("HistoryCart");
+			return PartialView("_HistoryCartTable", model);
 		}
 
+		[HttpPost]
+		public JsonResult CancelOrder(long orderId)
+		{
+			var session = (UserLogin)Session[Commoncontent.user_sesion];
+			if (session == null)
+				return Json(new { success = false, message = "Chưa đăng nhập" });
 
+			var order = db.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == session.UserId);
+			
+			var details = db.OrderDetails.Where(x => x.OrderId == orderId).ToList();
+			foreach (var d in details)
+			{
+				var product = db.Products.Find(d.ProductId);
+				if (product != null)
+					product.Quantity += d.Quantity ?? 0;
+			}
+
+			order.StatusId = 6;
+			order.UpdateDate = DateTime.Now;
+			db.SaveChanges();
+
+			var statusCounts = db.Orders
+				.Where(o => o.UserId == session.UserId)
+				.GroupBy(o => o.StatusId)
+				.Select(g => new { StatusId = g.Key, Count = g.Count() })
+				.ToList();
+
+			return Json(new { success = true, statusCounts });
+		}
 		public ActionResult Success()
 		{
 			var cart = Session[CartSession] ?? LoadCartCookie();
@@ -556,45 +544,6 @@ namespace WebsiteNoiThat.Controllers
 			}
 			return View(cart);
 		}
-
-		public ActionResult Error() => View();
-
-		public ActionResult DeleteError(int? page)
-		{
-			int pagenumber = (page ?? 1);
-			int pagesize = 6;
-
-			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-			if (session == null) return Redirect("/dang-nhap");
-
-			var model = (
-				from po in db.ProductOrders
-				join od in db.OrderDetails on po.OrderDetailId equals od.OrderDetailId
-				join o in db.Orders on od.OrderId equals o.OrderId
-				join p in db.Products on po.ProductId equals p.ProductId
-				join s in db.Status on o.StatusId equals s.StatusId
-				where o.UserId == session.UserId && (o.StatusId == 1 || o.StatusId == 2)
-				orderby o.UpdateDate descending
-				select new HistoryCart
-				{
-					OrderDetaiId = od.OrderDetailId,
-					ProductId = po.ProductId,
-					Name = po.Name,
-					Price = po.Price,
-					Discount = po.Discount,
-					Photo = p.Photo,
-					EndDate = p.EndDate,
-					Quantity = od.Quantity ?? 0,
-					StatusId = o.StatusId,
-					NameStatus = s.Name,
-					OrderId = o.OrderId
-				}
-			).ToList();
-
-			// Trả về View cùng PagedList nếu bạn muốn phân trang
-			return View(model.ToPagedList(pagenumber, pagesize));
-		}
-
 
 	}
 }
