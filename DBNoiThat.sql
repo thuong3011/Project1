@@ -1,20 +1,8 @@
 USE [master]
 GO
-/****** Object:  Database [DBNoiThat]    Script Date: 12/13/2025 1:52:19 PM ******/
 CREATE DATABASE [DBNoiThat]
  CONTAINMENT = NONE
  ON  PRIMARY 
-( NAME = N'DBNoiThat', FILENAME = N'/var/opt/mssql/data/DBNoiThat.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
- LOG ON 
-( NAME = N'DBNoiThat_log', FILENAME = N'/var/opt/mssql/data/DBNoiThat_log.ldf' , SIZE = 73728KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
- WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
-GO
-ALTER DATABASE [DBNoiThat] SET COMPATIBILITY_LEVEL = 160
-GO
-IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
-begin
-EXEC [DBNoiThat].[dbo].[sp_fulltext_database] @action = 'enable'
-end
 GO
 ALTER DATABASE [DBNoiThat] SET ANSI_NULL_DEFAULT OFF 
 GO
@@ -44,7 +32,7 @@ ALTER DATABASE [DBNoiThat] SET QUOTED_IDENTIFIER OFF
 GO
 ALTER DATABASE [DBNoiThat] SET RECURSIVE_TRIGGERS OFF 
 GO
-ALTER DATABASE [DBNoiThat] SET  ENABLE_BROKER 
+ALTER DATABASE [DBNoiThat] SET  DISABLE_BROKER 
 GO
 ALTER DATABASE [DBNoiThat] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
 GO
@@ -84,22 +72,310 @@ ALTER DATABASE [DBNoiThat] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP
 GO
 USE [DBNoiThat]
 GO
-/****** Object:  Table [dbo].[AnhChiTiet]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  User [cdc]    Script Date: 02/01/2026 2:47:05 CH ******/
+CREATE USER [cdc] WITHOUT LOGIN WITH DEFAULT_SCHEMA=[cdc]
+GO
+ALTER ROLE [db_owner] ADD MEMBER [cdc]
+GO
+/****** Object:  Schema [cdc]    Script Date: 02/01/2026 2:47:05 CH ******/
+CREATE SCHEMA [cdc]
+GO
+/****** Object:  UserDefinedFunction [cdc].[fn_cdc_get_all_changes_dbo_Product]    Script Date: 02/01/2026 2:47:05 CH ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+	create function [cdc].[fn_cdc_get_all_changes_dbo_Product]
+	(	@from_lsn binary(10),
+		@to_lsn binary(10),
+		@row_filter_option nvarchar(30)
+	)
+	returns table
+	return
+	
+	select NULL as __$start_lsn,
+		NULL as __$seqval,
+		NULL as __$operation,
+		NULL as __$update_mask, NULL as [ProductId], NULL as [Name], NULL as [Description], NULL as [Price], NULL as [Quantity], NULL as [ProviderId], NULL as [CateId], NULL as [Photo], NULL as [StartDate], NULL as [EndDate], NULL as [Discount]
+	where ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 0) = 0)
+
+	union all
+	
+	select t.__$start_lsn as __$start_lsn,
+		t.__$seqval as __$seqval,
+		t.__$operation as __$operation,
+		t.__$update_mask as __$update_mask, t.[ProductId], t.[Name], t.[Description], t.[Price], t.[Quantity], t.[ProviderId], t.[CateId], t.[Photo], t.[StartDate], t.[EndDate], t.[Discount]
+	from [cdc].[dbo_Product_CT] t with (nolock)    
+	where (lower(rtrim(ltrim(@row_filter_option))) = 'all')
+	    and ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 0) = 1)
+		and (t.__$operation = 1 or t.__$operation = 2 or t.__$operation = 4)
+		and (t.__$start_lsn <= @to_lsn)
+		and (t.__$start_lsn >= @from_lsn)
+		
+	union all	
+		
+	select t.__$start_lsn as __$start_lsn,
+		t.__$seqval as __$seqval,
+		t.__$operation as __$operation,
+		t.__$update_mask as __$update_mask, t.[ProductId], t.[Name], t.[Description], t.[Price], t.[Quantity], t.[ProviderId], t.[CateId], t.[Photo], t.[StartDate], t.[EndDate], t.[Discount]
+	from [cdc].[dbo_Product_CT] t with (nolock)     
+	where (lower(rtrim(ltrim(@row_filter_option))) = 'all update old')
+	    and ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 0) = 1)
+		and (t.__$operation = 1 or t.__$operation = 2 or t.__$operation = 4 or
+		     t.__$operation = 3 )
+		and (t.__$start_lsn <= @to_lsn)
+		and (t.__$start_lsn >= @from_lsn)
+	
+GO
+/****** Object:  UserDefinedFunction [cdc].[fn_cdc_get_net_changes_dbo_Product]    Script Date: 02/01/2026 2:47:05 CH ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+	create function [cdc].[fn_cdc_get_net_changes_dbo_Product]
+	(	@from_lsn binary(10),
+		@to_lsn binary(10),
+		@row_filter_option nvarchar(30)
+	)
+	returns table
+	return
+
+	select NULL as __$start_lsn,
+		NULL as __$operation,
+		NULL as __$update_mask, NULL as [ProductId], NULL as [Name], NULL as [Description], NULL as [Price], NULL as [Quantity], NULL as [ProviderId], NULL as [CateId], NULL as [Photo], NULL as [StartDate], NULL as [EndDate], NULL as [Discount]
+	where ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 1) = 0)
+
+	union all
+	
+	select __$start_lsn,
+	    case __$count_E146EA91
+	    when 1 then __$operation
+	    else
+			case __$min_op_E146EA91 
+				when 2 then 2
+				when 4 then
+				case __$operation
+					when 1 then 1
+					else 4
+					end
+				else
+				case __$operation
+					when 2 then 4
+					when 4 then 4
+					else 1
+					end
+			end
+		end as __$operation,
+		null as __$update_mask , [ProductId], [Name], [Description], [Price], [Quantity], [ProviderId], [CateId], [Photo], [StartDate], [EndDate], [Discount]
+	from
+	(
+		select t.__$start_lsn as __$start_lsn, __$operation,
+		case __$count_E146EA91 
+		when 1 then __$operation 
+		else
+		(	select top 1 c.__$operation
+			from [cdc].[dbo_Product_CT] c with (nolock)   
+			where  ( (c.[ProductId] = t.[ProductId]) )  
+			and ((c.__$operation = 2) or (c.__$operation = 4) or (c.__$operation = 1))
+			and (c.__$start_lsn <= @to_lsn)
+			and (c.__$start_lsn >= @from_lsn)
+			order by c.__$start_lsn, c.__$command_id, c.__$seqval) end __$min_op_E146EA91, __$count_E146EA91, t.[ProductId], t.[Name], t.[Description], t.[Price], t.[Quantity], t.[ProviderId], t.[CateId], t.[Photo], t.[StartDate], t.[EndDate], t.[Discount] 
+		from [cdc].[dbo_Product_CT] t with (nolock) inner join 
+		(	select  r.[ProductId],
+		    count(*) as __$count_E146EA91 
+			from [cdc].[dbo_Product_CT] r with (nolock)
+			where  (r.__$start_lsn <= @to_lsn)
+			and (r.__$start_lsn >= @from_lsn)
+			group by   r.[ProductId]) m
+		on t.__$seqval = ( select top 1 c.__$seqval from [cdc].[dbo_Product_CT] c with (nolock) where  ( (c.[ProductId] = t.[ProductId]) )  and c.__$start_lsn <= @to_lsn and c.__$start_lsn >= @from_lsn order by c.__$start_lsn desc, c.__$command_id desc, c.__$seqval desc ) and
+		    ( (t.[ProductId] = m.[ProductId]) ) 	
+		where lower(rtrim(ltrim(@row_filter_option))) = N'all'
+			and ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 1) = 1)
+			and (t.__$start_lsn <= @to_lsn)
+			and (t.__$start_lsn >= @from_lsn)
+			and ((t.__$operation = 2) or (t.__$operation = 4) or 
+				 ((t.__$operation = 1) and
+				  (2 not in 
+				 		(	select top 1 c.__$operation
+							from [cdc].[dbo_Product_CT] c with (nolock) 
+							where  ( (c.[ProductId] = t.[ProductId]) )  
+							and ((c.__$operation = 2) or (c.__$operation = 4) or (c.__$operation = 1))
+							and (c.__$start_lsn <= @to_lsn)
+							and (c.__$start_lsn >= @from_lsn)
+							order by c.__$start_lsn, c.__$command_id, c.__$seqval
+						 ) 
+	 			   )
+	 			 )
+	 			) 
+			and t.__$operation = (
+				select
+					max(mo.__$operation)
+				from
+					[cdc].[dbo_Product_CT] as mo with (nolock)
+				where
+					mo.__$seqval = t.__$seqval
+					and 
+					 ( (t.[ProductId] = mo.[ProductId]) ) 
+				group by
+					mo.__$seqval
+			)	
+	) Q
+	
+	union all
+	
+	select __$start_lsn,
+	    case __$count_E146EA91
+	    when 1 then __$operation
+	    else
+			case __$min_op_E146EA91 
+				when 2 then 2
+				when 4 then
+				case __$operation
+					when 1 then 1
+					else 4
+					end
+				else
+				case __$operation
+					when 2 then 4
+					when 4 then 4
+					else 1
+					end
+			end
+		end as __$operation,
+		case __$count_E146EA91
+		when 1 then
+			case __$operation
+			when 4 then __$update_mask
+			else null
+			end
+		else	
+			case __$min_op_E146EA91 
+			when 2 then null
+			else
+				case __$operation
+				when 1 then null
+				else __$update_mask 
+				end
+			end	
+		end as __$update_mask , [ProductId], [Name], [Description], [Price], [Quantity], [ProviderId], [CateId], [Photo], [StartDate], [EndDate], [Discount]
+	from
+	(
+		select t.__$start_lsn as __$start_lsn, __$operation,
+		case __$count_E146EA91 
+		when 1 then __$operation 
+		else
+		(	select top 1 c.__$operation
+			from [cdc].[dbo_Product_CT] c with (nolock)
+			where  ( (c.[ProductId] = t.[ProductId]) )  
+			and ((c.__$operation = 2) or (c.__$operation = 4) or (c.__$operation = 1))
+			and (c.__$start_lsn <= @to_lsn)
+			and (c.__$start_lsn >= @from_lsn)
+			order by c.__$start_lsn, c.__$command_id, c.__$seqval) end __$min_op_E146EA91, __$count_E146EA91, 
+		m.__$update_mask , t.[ProductId], t.[Name], t.[Description], t.[Price], t.[Quantity], t.[ProviderId], t.[CateId], t.[Photo], t.[StartDate], t.[EndDate], t.[Discount]
+		from [cdc].[dbo_Product_CT] t with (nolock) inner join 
+		(	select  r.[ProductId],
+		    count(*) as __$count_E146EA91, 
+		    CAST(NULL AS varbinary(128)) as __$update_mask
+			from [cdc].[dbo_Product_CT] r with (nolock)
+			where  (r.__$start_lsn <= @to_lsn)
+			and (r.__$start_lsn >= @from_lsn)
+			group by   r.[ProductId]) m
+		on t.__$seqval = ( select top 1 c.__$seqval from [cdc].[dbo_Product_CT] c with (nolock) where  ( (c.[ProductId] = t.[ProductId]) )  and c.__$start_lsn <= @to_lsn and c.__$start_lsn >= @from_lsn order by c.__$start_lsn desc, c.__$command_id desc, c.__$seqval desc ) and
+		    ( (t.[ProductId] = m.[ProductId]) ) 	
+		where lower(rtrim(ltrim(@row_filter_option))) = N'all with mask'
+			and ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 1) = 1)
+			and (t.__$start_lsn <= @to_lsn)
+			and (t.__$start_lsn >= @from_lsn)
+			and ((t.__$operation = 2) or (t.__$operation = 4) or 
+				 ((t.__$operation = 1) and
+				  (2 not in 
+				 		(	select top 1 c.__$operation
+							from [cdc].[dbo_Product_CT] c with (nolock)
+							where  ( (c.[ProductId] = t.[ProductId]) )  
+							and ((c.__$operation = 2) or (c.__$operation = 4) or (c.__$operation = 1))
+							and (c.__$start_lsn <= @to_lsn)
+							and (c.__$start_lsn >= @from_lsn)
+							order by c.__$start_lsn, c.__$command_id, c.__$seqval
+						 ) 
+	 			   )
+	 			 )
+	 			) 
+			and t.__$operation = (
+				select
+					max(mo.__$operation)
+				from
+					[cdc].[dbo_Product_CT] as mo with (nolock)
+				where
+					mo.__$seqval = t.__$seqval
+					and 
+					 ( (t.[ProductId] = mo.[ProductId]) ) 
+				group by
+					mo.__$seqval
+			)	
+	) Q
+	
+	union all
+	
+		select t.__$start_lsn as __$start_lsn,
+		case t.__$operation
+			when 1 then 1
+			else 5
+		end as __$operation,
+		null as __$update_mask , t.[ProductId], t.[Name], t.[Description], t.[Price], t.[Quantity], t.[ProviderId], t.[CateId], t.[Photo], t.[StartDate], t.[EndDate], t.[Discount]
+		from [cdc].[dbo_Product_CT] t  with (nolock)
+		where lower(rtrim(ltrim(@row_filter_option))) = N'all with merge'
+			and ( [sys].[fn_cdc_check_parameters]( N'dbo_Product', @from_lsn, @to_lsn, lower(rtrim(ltrim(@row_filter_option))), 1) = 1)
+			and (t.__$start_lsn <= @to_lsn)
+			and (t.__$start_lsn >= @from_lsn)
+			and (t.__$seqval = ( select top 1 c.__$seqval from [cdc].[dbo_Product_CT] c with (nolock) where  ( (c.[ProductId] = t.[ProductId]) )  and c.__$start_lsn <= @to_lsn and c.__$start_lsn >= @from_lsn order by c.__$start_lsn desc, c.__$command_id desc, c.__$seqval desc ))
+			and ((t.__$operation = 2) or (t.__$operation = 4) or 
+				 ((t.__$operation = 1) and 
+				   (2 not in 
+				 		(	select top 1 c.__$operation
+							from [cdc].[dbo_Product_CT] c with (nolock)
+							where  ( (c.[ProductId] = t.[ProductId]) )  
+							and ((c.__$operation = 2) or (c.__$operation = 4) or (c.__$operation = 1))
+							and (c.__$start_lsn <= @to_lsn)
+							and (c.__$start_lsn >= @from_lsn)
+							order by c.__$start_lsn, c.__$command_id, c.__$seqval
+						 ) 
+	 				)
+	 			 )
+	 			)
+			and t.__$operation = (
+				select
+					max(mo.__$operation)
+				from
+					[cdc].[dbo_Product_CT] as mo with (nolock)
+				where
+					mo.__$seqval = t.__$seqval
+					and 
+					 ( (t.[ProductId] = mo.[ProductId]) ) 
+				group by
+					mo.__$seqval
+			)
+	 
+GO
+/****** Object:  Table [dbo].[AnhChiTiet]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[AnhChiTiet](
+	[ProductId] [int] NULL,
+	[Photo] [nvarchar](max) NULL,
 	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[ProductId] [int] NOT NULL,
-	[Photo] [nvarchar](255) NOT NULL,
-PRIMARY KEY CLUSTERED 
+ CONSTRAINT [PK_AnhChiTiet] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Card]    Script Date: 12/13/2025 1:52:19 PM ******/
+ALTER TABLE [dbo].[AnhChiTiet] SET (LOCK_ESCALATION = AUTO)
+GO
+/****** Object:  Table [dbo].[Card]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -116,7 +392,7 @@ CREATE TABLE [dbo].[Card](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Category]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Category]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -132,7 +408,7 @@ CREATE TABLE [dbo].[Category](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Contact]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Contact]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -148,7 +424,7 @@ CREATE TABLE [dbo].[Contact](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Credentials]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Credentials]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -163,7 +439,7 @@ CREATE TABLE [dbo].[Credentials](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[News]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[News]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -180,7 +456,7 @@ CREATE TABLE [dbo].[News](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Order]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Order]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -202,7 +478,7 @@ CREATE TABLE [dbo].[Order](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[OrderDetail]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[OrderDetail]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -219,7 +495,7 @@ CREATE TABLE [dbo].[OrderDetail](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Product]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Product]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -242,7 +518,7 @@ CREATE TABLE [dbo].[Product](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProductOrder]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[ProductOrder]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -260,7 +536,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Provider]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Provider]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -276,7 +552,7 @@ CREATE TABLE [dbo].[Provider](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Role]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Role]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -290,21 +566,21 @@ CREATE TABLE [dbo].[Role](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Status]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[Status]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[Status](
-	[StatusId] [int] IDENTITY(1,1) NOT NULL,
-	[Name] [nvarchar](50) NULL,
- CONSTRAINT [PK_Status] PRIMARY KEY CLUSTERED 
+	[StatusId] [int] NOT NULL,
+	[Name] [nvarchar](100) NOT NULL,
+PRIMARY KEY CLUSTERED 
 (
 	[StatusId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[User]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[User]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -325,7 +601,7 @@ CREATE TABLE [dbo].[User](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UserGroups]    Script Date: 12/13/2025 1:52:19 PM ******/
+/****** Object:  Table [dbo].[UserGroups]    Script Date: 02/01/2026 2:47:05 CH ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -339,10 +615,12 @@ CREATE TABLE [dbo].[UserGroups](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-ALTER TABLE [dbo].[AnhChiTiet]  WITH CHECK ADD FOREIGN KEY([ProductId])
+ALTER TABLE [dbo].[AnhChiTiet]  WITH CHECK ADD  CONSTRAINT [FK_AnhChiTiet_Product] FOREIGN KEY([ProductId])
 REFERENCES [dbo].[Product] ([ProductId])
 ON UPDATE CASCADE
 ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AnhChiTiet] CHECK CONSTRAINT [FK_AnhChiTiet_Product]
 GO
 USE [master]
 GO
