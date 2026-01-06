@@ -3,19 +3,19 @@
 * Đăng nhập bằng Facebook
 * Thanh toán online = MOMO
 * Gửi mail thông báo
-* AI gợi ý sản phẩm
 * Chatbot tư vấn đơn giản call api Gemini
+* Gợi ý sản phẩm
 
 ## 🚀 Các Tính Năng Cốt Lõi
 
-Chúng tôi tập trung vào việc tạo ra một hệ thống đồng bộ, hiệu quả cho cả người dùng cuối và quản trị viên:
+Quản trị viên:
 
 | Tính Năng Chính | Mô Tả Giá Trị |
 | :--- | :--- |
 | **Quản Lý Sản Phẩm Thông Minh** | Cập nhật, phân loại và hiển thị chi tiết sản phẩm dễ dàng. |
 | **Tối Ưu Hóa Quy Trình Bán Hàng** | Từ giỏ hàng, đặt mua đến thanh toán, theo dõi đơn hàng tự động. |
 | **Kiểm Soát Tồn Kho Chính Xác** | Cập nhật tồn kho theo thời gian thực, cảnh báo khi cận mức tối thiểu. |
-| **Thống Kê và Báo Cáo Trực Quan** | Dashboard (Bảng điều khiển) với biểu đồ phân tích doanh thu, xu hướng mua sắm. |
+| **Thống Kê và Báo Cáo Trực Quan** | Dashboard (Bảng điều khiển) với biểu đồ phân tích doanh thu |
 
 ---
 
