@@ -41,6 +41,16 @@ Sử dụng bộ công nghệ hiện đại, hiệu năng cao và có tính ổn
 
 ### DEMO
 -Xem ảnh ở thư mục [tailieubaocao/anhchucnanghethong ](https://github.com/thuong3011/Project1/tree/main/Tailieubaocao/anhchucnanghethong)
+</br>
+
+
+<img width="400" height="400" alt="thanhtoanMoMo online" src="https://github.com/user-attachments/assets/667ee886-77aa-4df3-9a44-691472b3fd03" />
+<img width="400" height="400" alt="DangNhapFacebook" src="https://github.com/user-attachments/assets/0ba87117-a510-49f6-8609-b14f0fba6cf6" />
+<img width="400" height="400" alt="mailMOMO" src="https://github.com/user-attachments/assets/b73bf194-4acf-4426-a303-dc7cab778de4" />
+<img width="400" height="450" alt="mail" src="https://github.com/user-attachments/assets/ac28229d-02d7-4941-9fe9-54c2106cf160" />
+<img width="350" height="350" alt="chatbot" src="https://github.com/user-attachments/assets/9990d574-830b-4e0d-8701-e9bcdbb23185" />
+
+
 
 ---
 
