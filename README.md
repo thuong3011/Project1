@@ -13,8 +13,8 @@ Quản trị viên:
 | Tính Năng Chính | Mô Tả Giá Trị |
 | :--- | :--- |
 | **Quản Lý Sản Phẩm Thông Minh** | Cập nhật, phân loại và hiển thị chi tiết sản phẩm dễ dàng. |
-| **Tối Ưu Hóa Quy Trình Bán Hàng** | Từ giỏ hàng, đặt mua đến thanh toán, theo dõi đơn hàng tự động. |
-| **Kiểm Soát Tồn Kho Chính Xác** | Cập nhật tồn kho theo thời gian thực, cảnh báo khi cận mức tối thiểu. |
+| **Tối Ưu Hóa Quy Trình Bán Hàng** | Từ giỏ hàng, đặt mua đến thanh toán, theo dõi đơn hàng. |
+| **Kiểm Soát Tồn Kho Chính Xác** | Cập nhật tồn kho theo thời gian. |
 | **Thống Kê và Báo Cáo Trực Quan** | Dashboard (Bảng điều khiển) với biểu đồ phân tích doanh thu |
 
 ---
@@ -23,7 +23,7 @@ Quản trị viên:
 
 | Nhóm Người Dùng | Vai Trò | Chức Năng Chính |
 | :--- | :--- | :--- |
-| **Khách Hàng** | Người Dùng Cuối | Đăng ký/Đăng nhập, Tìm kiếm, Đặt hàng & Thanh toán, Theo dõi đơn, Đánh giá sản phẩm. |
+| **Khách Hàng** | Người Dùng Cuối | Đăng ký/Đăng nhập, Tìm kiếm, Đặt hàng & Thanh toán, Theo dõi đơn. |
 | **Nhân Viên** | Hỗ Trợ Vận Hành | Quản lý **sản phẩm** (thêm/sửa), Xử lý **đơn hàng** và **nhập hàng**, Quản lý khách hàng. |
 | **Quản Lý** | Người Điều Hành | **Toàn quyền quản trị** hệ thống, Phân quyền nhân viên, Thiết lập khuyến mãi, Phân tích **chiến lược kinh doanh**. |
 
