@@ -1,4 +1,4 @@
-﻿using BotDetect.Web.Mvc;
+using BotDetect.Web.Mvc;
 using Models.DAO;
 using Models.EF;
 using reCAPTCHA.MVC;
@@ -16,306 +16,370 @@ using WebsiteNoiThat.Models;
 
 namespace WebsiteNoiThat.Controllers
 {
-    public class RegisterAndLoginController : Controller
-    {
-        // GET: RegisterAndLogin
-        DBNoiThat db = new DBNoiThat();
-		private const string ProxyBaseUrl = "https://thuong.fwh.is/fb_proxy.php";
+	public class RegisterAndLoginController : Controller
+	{
+		// GET: RegisterAndLogin
+		DBNoiThat db = new DBNoiThat();
+		private const string ProxyBaseUrl =
+	"https://thuong.free.je/fb_proxy.php";
 
-		// URL Callback của Web B (sẽ được gửi tới Web A)
-		private const string LocalhostCallbackUri = "http://localhost:58473/RegisterAndLogin/LocalhostCallback";
+		private const string CallbackUrl =
+			"http://localhost:58473/RegisterAndLogin/FacebookCallback";
 		public ActionResult Logout()
-        {
-            Session[Commoncontent.user_sesion] = null;
-            Session[Commoncontent.CartSession] = null;
-            return Redirect("/");
-        }
-        
-        [HttpGet]
-        public ActionResult Login()
-        {
-            return PartialView();
-        }
-        [HttpPost]
-        public ActionResult Login(Models.LoginModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var dao = new UserDao();
-                //var result = dao.Login(model.UserName, model.Password);
-                var result = dao.Login(model.UserName, model.Password);
+		{
+			Session[Commoncontent.user_sesion] = null;
+			Session[Commoncontent.CartSession] = null;
+			return Redirect("/");
+		}
 
-                if (result == 1)
-                {
-                    var user = dao.GetById(model.UserName);
-                    var userSession = new UserLogin();
-					userSession.Name= user.Name;
-					userSession.Username = user.Username;
-                    userSession.UserId = user.UserId;
-                    Session.Add(Commoncontent.user_sesion, userSession);
-                    return Redirect("/");
-                }
-                else if (result == -1)
-                {
-                    ModelState.AddModelError("", "Tài Khoản đang bị khóa, liên hệ admin");
+		[HttpGet]
+		public ActionResult Login()
+		{
+			return View();
+		}
 
-                }
-                else if (result == 0)
-                {
-                    ModelState.AddModelError("", "Tài khoản không tồn tại");
-                }
-                else if (result == -2)
-                {
-                    ModelState.AddModelError("", "Mật khẩu không đúng");
-                }
-            }
-            return View(model);
-        }
-        [HttpGet]
-        
-        public ActionResult Register()
-        {
-            return PartialView();
-        }
+		[HttpPost]
+		public ActionResult Login(Models.LoginModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return View(model);
+			}
 
-        [HttpPost]
-        public ActionResult Register(RegisterModel model)
-        {
-            if(ModelState.IsValid)
-            {
-                var dao = new UserDao();
-                if (dao.CheckUserName(model.UserName))
-                {
-                    ModelState.AddModelError("", "Tên đăng nhập đã tồn tại");
-                }
-                //else if (dao.CheckEmail(model.Email))
-                //{
-                //    ModelState.AddModelError("", "Email đã tồn tại");
-                //}
-                else
-                {
-                    var user = new User();
-                    user.Username = model.UserName;
-                    user.Password = model.Password;
-                    user.Phone = model.Phone;
-                    user.Email = model.Email;
-                    user.Address = model.Address;
-                    user.Name = model.Name;
-                    user.GroupId = "USER";
+			var user = db.Users
+						 .FirstOrDefault(x => x.Username == model.UserName);
 
-                    user.Status = true;
+			if (user == null)
+			{
+				ModelState.AddModelError("", "Tài khoản không tồn tại");
+				return View(model);
+			}
 
-                    var result = dao.Insert(user);
-                    if (result > 0)
-                    {
-                        ViewBag.Success = "Đăng ký thành công";
-                        var models = db.Users.SingleOrDefault(n => n.Username == model.UserName);
-                        return RedirectToAction("Card", new { UserId= models.UserId });
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", "Đăng ký không thành công.");
-                    }
-                }
-            }
-            model = new RegisterModel();
-            return View();
-        }
+			if (!user.Status)
+			{
+				ModelState.AddModelError("", "Tài khoản đang bị khóa, liên hệ admin");
+				return View(model);
+			}
 
-        [HttpGet]
-        public ActionResult ViewCurentUser()
-        {
-            var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-            if (session != null)
-            {
-                var model = db.Users.SingleOrDefault(n => n.UserId == session.UserId);
-                return View(model);
-            }
-            else
-            {
-                return Redirect("/RegisterAndLogin/Login");
-            }
-        }
+			// Trường hợp tài khoản Facebook chưa đặt mật khẩu
+			if (string.IsNullOrEmpty(user.Password))
+			{
+				ModelState.AddModelError("",
+					"Tài khoản này đăng nhập bằng Facebook. Vui lòng đăng nhập bằng Facebook.");
+				return View(model);
+			}
 
-        [HttpGet]
-        public ActionResult EditCurentUser()
-        {
-            var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-            var model = db.Users.SingleOrDefault(n => n.UserId == session.UserId);
-            return View(model);
-        }
+			bool validPassword =
+				BCrypt.Net.BCrypt.Verify(
+					model.Password,
+					user.Password);
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult EditCurentUser([Bind(Include = "UserId,Name,Address,Phone,Username,Password,Email,GroupId,Status")] User user)
-        {
-            if (ModelState.IsValid)
-            {
-                user.Password = user.Password;
-                db.Entry(user).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("ViewCurentUser");
-            }
-            return View(user);
-        }
+			if (!validPassword)
+			{
+				ModelState.AddModelError("", "Mật khẩu không đúng");
+				return View(model);
+			}
 
-        [HttpGet]
-        public ActionResult Card(int UserId)
+			var userSession = new UserLogin
+			{
+				UserId = user.UserId,
+				Username = user.Username,
+				Name = user.Name
+			};
 
-        {
-           
-            var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-            if(session!=null)
-            {
-                var checkuser = db.Cards.SingleOrDefault(n => n.UserId == session.UserId);
-                if (checkuser == null)
-                {
-                    var m = db.Users.SingleOrDefault(n => n.UserId == UserId);
-                    if (m != null)
-                    {
-                        var model = new Card();
-                        model.UserId = session.UserId;
-                        model.NumberCard = 0;
-                        model.UserNumber = 0;
-                        return View(model);
+			Session[Commoncontent.user_sesion] = userSession;
 
-                    }
-                    else
-                    {
-                        
-                        var model = new Card();
-                        model.UserId = session.UserId;
-                        model.NumberCard = 0;
-                        model.UserNumber = 0;
-                        
-                        return View(model);
-                    }
-                }
-                else
-                {
-                    ModelState.AddModelError("", "Đã có thẻ tích điểm. Bạn không thể đăng ký thêm.");
-                    return View();
-                }
-            }
-            else
-            {
-                var model = new Card();
-                model.UserId = UserId;
-                model.NumberCard = 0;
-                model.UserNumber = 0;
-                return View(model);
-            }
-           
-           
-        }
-        [HttpPost]
-        public ActionResult Card(Card n)
-        {
-            var model =new Card();
-            model.UserId = n.UserId;
-            model.NumberCard = 0;
-            model.UserNumber = 0;
-            model.Identification = n.Identification;
+			return Redirect("/");
+		}
+		[HttpGet]
 
-            db.Cards.Add(model);
-            db.SaveChanges();
-            ViewBag.Success = "Đăng ký thẻ thành công";
-            return Redirect("/");
-        }
-        
-        public ActionResult ViewLogin()
-        {
-            var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
-           if(session!=null)
-            {
-                var model = db.Cards.SingleOrDefault(n => n.UserId == session.UserId);
-                var models = (from a in db.OrderDetails
-                            join b in db.Orders
-                            on a.OrderId equals b.OrderId
-                            join c in db.Products
-                            on a.ProductId equals c.ProductId
-                            join d in db.Users on b.UserId equals d.UserId
-                            join e in db.Cards on d.UserId equals e.UserId
-                            where b.StatusId == 5 && e.UserId == session.UserId
-                            select new
-                            {
-                                ProductId = a.ProductId,
-                                Price = a.Price,
-                                Quantity = a.Quantity,
-                                Discount = c.Discount,
-                                NumberCard = e.NumberCard,
-                                Username = d.Username
-                            }).ToList();
-                    if (models.Count()==0)
-                    {
-                        ViewBag.Card = 0;
-                    }
-                    else
-                    {
-                        double? total = 0;
-                        foreach (var item in models)
-                        {
-                            total += ((item.Price.GetValueOrDefault(0) - (item.Price.GetValueOrDefault(0) * item.Discount.GetValueOrDefault(0) * 0.01)) * item.Quantity);
-                        }
-                      
-                        model.NumberCard = Convert.ToInt32(total / 1000)- model.UserNumber;
-                        db.SaveChanges();
-                        ViewBag.Card = model.NumberCard;
-                    }
-               
-            }
-           else
-            {
-                return PartialView();
-            }
-            return PartialView();
+		public ActionResult Register()
+		{
+			return PartialView();
+		}
 
-        }
+		[HttpPost]
+		public ActionResult Register(RegisterModel model)
+		{
+			if (ModelState.IsValid)
+			{
+				var dao = new UserDao();
+				if (dao.CheckUserName(model.UserName))
+				{
+					ModelState.AddModelError("", "Tên đăng nhập đã tồn tại");
+				}
+				
+				else
+				{
+					var user = new User();
+					user.Username = model.UserName;
+					user.Password =
+	BCrypt.Net.BCrypt.HashPassword(
+		model.Password);
+					user.Phone = model.Phone;
+					user.Email = model.Email;
+					user.Address = model.Address;
+					user.Name = model.Name;
+					user.GroupId = "USER";
+
+					user.Status = true;
+
+					var result = dao.Insert(user);
+					if (result > 0)
+					{
+						ViewBag.Success = "Đăng ký thành công";
+						var models = db.Users.SingleOrDefault(n => n.Username == model.UserName);
+						return RedirectToAction("Card", new { UserId = models.UserId });
+					}
+					else
+					{
+						ModelState.AddModelError("", "Đăng ký không thành công.");
+					}
+				}
+			}
+			model = new RegisterModel();
+			return View();
+		}
+
+		[HttpGet]
+		public ActionResult ViewCurentUser()
+		{
+			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
+			if (session != null)
+			{
+				var model = db.Users.SingleOrDefault(n => n.UserId == session.UserId);
+				return View(model);
+			}
+			else
+			{
+				return Redirect("/RegisterAndLogin/Login");
+			}
+		}
+
+		[HttpGet]
+		public ActionResult EditCurentUser()
+		{
+			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
+			var model = db.Users.SingleOrDefault(n => n.UserId == session.UserId);
+			return View(model);
+		}
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public ActionResult EditCurentUser([Bind(Include = "UserId,Name,Address,Phone,Username,Password,Email,GroupId,Status")] User user)
+		{
+			if (ModelState.IsValid)
+			{
+				user.Password = user.Password;
+				db.Entry(user).State = EntityState.Modified;
+				db.SaveChanges();
+				return RedirectToAction("ViewCurentUser");
+			}
+			return View(user);
+		}
+
+		[HttpGet]
+		public ActionResult Card(int UserId)
+
+		{
+
+			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
+			if (session != null)
+			{
+				var checkuser = db.Cards.SingleOrDefault(n => n.UserId == session.UserId);
+				if (checkuser == null)
+				{
+					var m = db.Users.SingleOrDefault(n => n.UserId == UserId);
+					if (m != null)
+					{
+						var model = new Card();
+						model.UserId = session.UserId;
+						model.NumberCard = 0;
+						model.UserNumber = 0;
+						return View(model);
+
+					}
+					else
+					{
+
+						var model = new Card();
+						model.UserId = session.UserId;
+						model.NumberCard = 0;
+						model.UserNumber = 0;
+
+						return View(model);
+					}
+				}
+				else
+				{
+					ModelState.AddModelError("", "Đã có thẻ tích điểm. Bạn không thể đăng ký thêm.");
+					return View();
+				}
+			}
+			else
+			{
+				var model = new Card();
+				model.UserId = UserId;
+				model.NumberCard = 0;
+				model.UserNumber = 0;
+				return View(model);
+			}
+
+
+		}
+		[HttpPost]
+		public ActionResult Card(Card n)
+		{
+			var model = new Card();
+			model.UserId = n.UserId;
+			model.NumberCard = 0;
+			model.UserNumber = 0;
+			model.Identification = n.Identification;
+
+			db.Cards.Add(model);
+			db.SaveChanges();
+			ViewBag.Success = "Đăng ký thẻ thành công";
+			return Redirect("/");
+		}
+
+		public ActionResult ViewLogin()
+		{
+			var session = (UserLogin)Session[WebsiteNoiThat.Common.Commoncontent.user_sesion];
+			if (session != null)
+			{
+				var model = db.Cards.SingleOrDefault(n => n.UserId == session.UserId);
+				var models = (from a in db.OrderDetails
+							  join b in db.Orders
+							  on a.OrderId equals b.OrderId
+							  join c in db.Products
+							  on a.ProductId equals c.ProductId
+							  join d in db.Users on b.UserId equals d.UserId
+							  join e in db.Cards on d.UserId equals e.UserId
+							  where b.StatusId == 5 && e.UserId == session.UserId
+							  select new
+							  {
+								  ProductId = a.ProductId,
+								  Price = a.Price,
+								  Quantity = a.Quantity,
+								  Discount = c.Discount,
+								  NumberCard = e.NumberCard,
+								  Username = d.Username
+							  }).ToList();
+				if (models.Count() == 0)
+				{
+					ViewBag.Card = 0;
+				}
+				else
+				{
+					double? total = 0;
+					foreach (var item in models)
+					{
+						total += ((item.Price.GetValueOrDefault(0) - (item.Price.GetValueOrDefault(0) * item.Discount.GetValueOrDefault(0) * 0.01)) * item.Quantity);
+					}
+
+					model.NumberCard = Convert.ToInt32(total / 1000) - model.UserNumber;
+					db.SaveChanges();
+					ViewBag.Card = model.NumberCard;
+				}
+
+			}
+			else
+			{
+				return PartialView();
+			}
+			return PartialView();
+
+		}
 		public ActionResult LoginFacebook()
 		{
 			// Chuyển hướng người dùng đến tập tin PHP trên Web A, truyền theo callbackUrlB
 			string urlA = ProxyBaseUrl + "?callbackUrlB=" +
-						  HttpUtility.UrlEncode(LocalhostCallbackUri);
+						  HttpUtility.UrlEncode(CallbackUrl);
 
 			return Redirect(urlA);
 		}
 
 
 		// Thay thế cho FacebookCallback(string code)
-		public ActionResult LocalhostCallback(string fbId, string name, string email, string error)
+		public ActionResult FacebookCallback(
+	string fbId,
+	string name,
+	string email)
 		{
-			// Kiểm tra lỗi (nếu có lỗi từ Proxy A)
-			if (!string.IsNullOrEmpty(error))
+			if (string.IsNullOrEmpty(fbId))
 			{
-				return RedirectToAction("Login", new { msg = "Đăng nhập Facebook bị lỗi: " + error });
+				return RedirectToAction("Login");
 			}
 
-			// Giải mã (Decode) tên và email (vì đã được mã hóa khi truyền qua URL)
-			string decodedName = HttpUtility.UrlDecode(name);
-			string decodedEmail = HttpUtility.UrlDecode(email);
+			string decodedName =
+				HttpUtility.UrlDecode(name);
 
-			// 3) Kiểm tra DB (Sử dụng ID đã nhận từ A)
-			var user = db.Users.SingleOrDefault(x => x.Password == fbId); // Dùng fbId
+			string decodedEmail =
+				HttpUtility.UrlDecode(email);
+
+			var user =
+				db.Users
+				.FirstOrDefault(x =>
+					x.FacebookId == fbId);
+
+			if (user == null)
+			{
+				if (!string.IsNullOrEmpty(decodedEmail))
+				{
+					user =
+						db.Users
+						.FirstOrDefault(x =>
+							x.Email == decodedEmail);
+
+					if (user != null)
+					{
+						bool existed =
+db.Users.Any(x =>
+	x.FacebookId == fbId);
+
+						if (!existed)
+						{
+							user.FacebookId = fbId;
+						}
+
+						db.SaveChanges();
+					}
+				}
+			}
 
 			if (user == null)
 			{
 				user = new User()
 				{
-					Name = decodedName, // Dùng decodedName
-					Email = decodedEmail ?? "", // Dùng decodedEmail
-					Username = decodedEmail ?? ("fb_" + fbId),
-					Password = fbId, // Lưu Facebook ID
+					FacebookId = fbId,
+
+					Name = decodedName,
+
+					Email = string.IsNullOrEmpty(decodedEmail)
+		? null
+		: decodedEmail,
+
+					Username =
+						string.IsNullOrEmpty(decodedEmail)
+						? "fb_" + fbId
+						: decodedEmail,
+
+					Password = null,
+
 					Phone = null,
+
 					Address = "",
+
 					GroupId = "USER",
+
 					Status = true
 				};
 
 				db.Users.Add(user);
+
 				db.SaveChanges();
 			}
 
-			// 4) Tạo session (Giữ nguyên)
 			Session.Add(Commoncontent.user_sesion, new UserLogin
 			{
 				Username = user.Username,
