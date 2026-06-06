@@ -1,4 +1,4 @@
-﻿namespace Models.EF
+namespace Models.EF
 {
     using System;
     using System.Collections.Generic;
@@ -40,5 +40,7 @@
 
         [DisplayName("Trạng thái tài khoản")]
         public bool Status { get; set; }
-    }
+		public string FacebookId { get; set; }
+		public virtual ICollection<SocialAccount> SocialAccounts { get; set; }
+	}
 }
